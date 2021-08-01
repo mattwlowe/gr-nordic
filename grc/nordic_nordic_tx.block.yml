@@ -3,11 +3,15 @@ label: nordic tx
 category: '[Nordic]'
 templates:
   imports: import nordic
-  make: nordic.nordic_tx(${channel_count})
+  make: nordic.nordic_tx(${channel_count},${big_packet})
 parameters:
 - id: channel_count
   label: Channel_count
   default: '1'
+  dtype: int
+  id: big_packet
+  label: Big_packet
+  default: '0'
   dtype: int
 inputs:
 - label: nordictap_in

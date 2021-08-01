@@ -33,20 +33,23 @@ namespace gr {
   namespace nordic {
 
     nordic_tx::sptr
-    nordic_tx::make(uint8_t channel_count)
+    nordic_tx::make(uint8_t channel_count,
+                    uint8_t big_packet)
     {
       return gnuradio::get_initial_sptr
-        (new nordic_tx_impl(channel_count));
+        (new nordic_tx_impl(channel_count, big_packet));
     }
 
     /*
      * The private constructor
      */
-    nordic_tx_impl::nordic_tx_impl(uint8_t channel_count)
+    nordic_tx_impl::nordic_tx_impl(uint8_t channel_count,
+                                   uint8_t big_packet)
       : gr::sync_block("nordic_tx",
               gr::io_signature::make(0, 0, 0),
               gr::io_signature::make(1, channel_count, sizeof(uint8_t))),
-        m_channel_count(channel_count)
+        m_channel_count(channel_count),
+        m_big_packet(big_packet)
     {
       // Register nordictap input, which accepts packets to transmit
       message_port_register_in(pmt::intern("nordictap_in"));
@@ -99,6 +102,7 @@ namespace gr {
         // Build the packet
         enhanced_shockburst_packet * packet =
           new enhanced_shockburst_packet(header.address_length,
+                                         header.big_packet,
                                          header.payload_length,
                                          header.sequence_number,
                                          header.no_ack,

@@ -51,7 +51,7 @@ namespace gr {
       : gr::sync_block("nordic_rx",
               gr::io_signature::make(1, 1, sizeof(uint8_t)),
               gr::io_signature::make(0, 0, 0)),
-              m_decoded_bits_bytes(42*8 /* buffer sufficient for max ESB frame length */),
+              m_decoded_bits_bytes(262*8 /* buffer sufficient for max ESB frame length */), // ESB payload can be up to 252 bytes plus header+crc
               m_crc_length(crc_length),
               m_address_length(address_length),
               m_channel(channel),
@@ -104,6 +104,7 @@ namespace gr {
               header.channel = m_channel;
               header.data_rate = m_data_rate;
               header.address_length = m_address_length;
+              header.big_packet = m_enhanced_shockburst->big_packet();
               header.payload_length = m_enhanced_shockburst->payload_length();
               header.sequence_number = m_enhanced_shockburst->sequence_number();
               header.no_ack = m_enhanced_shockburst->no_ack();

@@ -30,6 +30,7 @@ public:
 
   // Constructor
   enhanced_shockburst_packet(uint8_t address_length,
+                             uint8_t big_packet,
                              uint8_t payload_length,
                              uint8_t sequence_number,
                              uint8_t no_ack,
@@ -48,6 +49,13 @@ public:
                         uint8_t crc_length,
                         enhanced_shockburst_packet *& packet);
 
+  static bool _try_parse(const uint8_t* bytes,
+                        const uint8_t* bytes_shifted,
+                        uint8_t address_length,
+                        uint8_t crc_length,
+                        enhanced_shockburst_packet*& packet,
+                        bool big_packet);
+
   // Process a crc byte (or partial byte)
   static uint16_t crc_update (uint16_t crc, uint8_t data, uint8_t bits=8);
 
@@ -64,11 +72,15 @@ public:
   const uint8_t * payload() { return m_payload; }
   const uint8_t * crc() { return m_crc; }
   const uint8_t * bytes() { return m_packet_bytes; }
+  const uint8_t big_packet() { return m_big_packet; }
 
 private:
 
   // Address length
   uint8_t m_address_length;
+
+  // Big packet protocol
+  bool m_big_packet;
 
   // Payload length
   uint8_t m_payload_length;

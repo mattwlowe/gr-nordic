@@ -3,7 +3,7 @@ label: nordictap_transmitter
 category: '[Nordic]'
 templates:
   imports: import nordic
-  make: nordic.nordictap_transmitter(${channel_count}, ${address}, ${payload}, ${channel_index}, ${sequence_number})
+  make: nordic.nordictap_transmitter(${channel_count}, ${address}, ${payload}, ${channel_index}, ${sequence_number}, ${big_packet})
 parameters:
 - id: channel_count
   label: Channel Count
@@ -23,6 +23,10 @@ parameters:
   dtype: int
 - id: sequence_number
   label: Sequence Number
+  default: '0'
+  dtype: int
+  id: big_packet
+  label: Big Packet
   default: '0'
   dtype: int
 inputs:
