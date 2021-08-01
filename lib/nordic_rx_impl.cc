@@ -87,7 +87,7 @@ namespace gr {
         {
           // Check for a valid first address bit
           if((bytes[0] & 0x80) == (bytes[1] & 0x80))
-          {
+          {	      
             // Attempt to decode a payload
             if(enhanced_shockburst_packet::try_parse(bytes,
                                                      m_decoded_bits_bytes.bytes(0),
@@ -95,9 +95,7 @@ namespace gr {
                                                      m_crc_length,
                                                      m_enhanced_shockburst))
             {
-              //enhanced_shockburst_packet::print();
-              
-              
+              // m_enhanced_shockburst->print();
               
               // Build the wireshark header
               nordictap_header header;

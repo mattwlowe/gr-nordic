@@ -68,7 +68,7 @@ enhanced_shockburst_packet::enhanced_shockburst_packet(uint8_t address_length,
 
   uint8_t alignment_offset;
   // PCF
-  if (big_packet)
+  if (!big_packet)
   {
       m_packet_bytes[1 + m_address_length] = (m_payload_length & 0x3F) << 2;
       m_packet_bytes[1 + m_address_length] |= (m_sequence_number & 0x3);
@@ -172,8 +172,8 @@ bool enhanced_shockburst_packet::_try_parse(const uint8_t * bytes,
   crc_given |= bytes[3 + address_length + payload_length];
   crc_given <<= alignment_offset;
   crc_given |= bytes[4 + address_length + payload_length] >> (8 - alignment_offset) ;
+  crc_given = htons(crc_given);
 
-  memcpy(&crc_given, &bytes_shifted[8 + payload_length], 2);
 
   // Calculate the CRC
   uint16_t crc = 0xFFFF;
