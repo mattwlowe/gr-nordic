@@ -10,19 +10,23 @@ parameters:
   default: '0'
   dtype: int
 - id: address_length
-  label: Address_length
+  label: Address Length
   default: '5'
   dtype: int
 - id: crc_length
-  label: Crc_length
+  label: CRC Length
   default: '2'
   dtype: int
 - id: data_rate
-  label: Data_rate
+  label: Data Rate
   default: '0'
-  dtype: int
+  dtype: enum
+  options: ['0', '1', '2']
+  option_labels: ['250kbps', '1mbps', '2mbps']
+  option_attributes:
+    dtype: [int, int, int]
 - id: address_match
-  label: Address_match
+  label: Address Match List
   default: ''
   dtype: string
 inputs:
@@ -49,8 +53,8 @@ documentation: |-
     use 16-bit CRC. The most common (and default value) is 2. 
 
     Data_rate:
-    The data rate argument is specified in mbps and mainly for informational
-    purposes and tags data packets for downstream usage (e.g. Wireshark).
+    The data rate argument is mainly for informational purposes and tags data
+    packets for downstream usage (e.g. Wireshark).
 
     Address_match:
     An optional argument which indicates a list of addresses to search for
