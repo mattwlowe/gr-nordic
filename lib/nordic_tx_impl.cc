@@ -33,23 +33,20 @@ namespace gr {
   namespace nordic {
 
     nordic_tx::sptr
-    nordic_tx::make(uint8_t channel_count,
-                    uint8_t big_packet)
+    nordic_tx::make(uint8_t channel_count)
     {
       return gnuradio::get_initial_sptr
-        (new nordic_tx_impl(channel_count, big_packet));
+        (new nordic_tx_impl(channel_count));
     }
 
     /*
      * The private constructor
      */
-    nordic_tx_impl::nordic_tx_impl(uint8_t channel_count,
-                                   uint8_t big_packet)
+    nordic_tx_impl::nordic_tx_impl(uint8_t channel_count)
       : gr::sync_block("nordic_tx",
               gr::io_signature::make(0, 0, 0),
               gr::io_signature::make(1, channel_count, sizeof(uint8_t))),
-        m_channel_count(channel_count),
-        m_big_packet(big_packet)
+        m_channel_count(channel_count)
     {
       // Register nordictap input, which accepts packets to transmit
       message_port_register_in(pmt::intern("nordictap_in"));

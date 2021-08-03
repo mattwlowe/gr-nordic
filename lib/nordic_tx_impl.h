@@ -40,9 +40,6 @@ namespace gr {
       // Number of output channels
       uint8_t m_channel_count;
 
-      // Big packet protocol
-      uint8_t m_big_packet;
-
       // Incoming message handler
       void nordictap_message_handler(pmt::pmt_t msg);
 
@@ -50,7 +47,7 @@ namespace gr {
       uint16_t crc_update (uint16_t crc, uint8_t data, uint8_t bits=8);
 
      public:
-      nordic_tx_impl(uint8_t channel_count, uint8_t big_packet);
+      nordic_tx_impl(uint8_t channel_count);
       ~nordic_tx_impl();
 
       // Where all the action really happens
