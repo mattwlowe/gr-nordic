@@ -113,20 +113,23 @@ enhanced_shockburst_packet::~enhanced_shockburst_packet()
 
 // Attempt to parse a packet from some incoming bytes using small packet protocol first, then large packet protocol
 bool enhanced_shockburst_packet::try_parse(const uint8_t * bytes,
-                                           const uint8_t * bytes_shifted,
+                                           const uint8_t ** addresses,
+                                           const uint8_t *address_match_len,
                                            uint8_t address_length,
                                            uint8_t crc_length,
                                            enhanced_shockburst_packet *& packet)
 {
     if (!enhanced_shockburst_packet::_try_parse(bytes,
-                                                     bytes_shifted,
+                                                     addresses,
+                                                     address_match_len,
                                                      address_length,
                                                      crc_length,
                                                      packet,
                                                      false))
     {
         return enhanced_shockburst_packet::_try_parse(bytes,
-                                                         bytes_shifted,
+                                                         addresses,
+                                                         address_match_len,
                                                          address_length,
                                                          crc_length,
                                                          packet,
@@ -136,7 +139,8 @@ bool enhanced_shockburst_packet::try_parse(const uint8_t * bytes,
     return true;
 }
 bool enhanced_shockburst_packet::_try_parse(const uint8_t * bytes,
-    const uint8_t * bytes_shifted,
+    const uint8_t ** addresses,
+    const uint8_t * address_match_len,
     uint8_t address_length,
     uint8_t crc_length,
     enhanced_shockburst_packet * &packet,
@@ -184,6 +188,26 @@ bool enhanced_shockburst_packet::_try_parse(const uint8_t * bytes,
   // Validate the CRC
   if(memcmp(&crc, &crc_given, 2) != 0)
   {
+      // If we've been provided a list of possible addresses, look for those so we can report CRC errors
+      if (address_match_len)
+      {
+          uint8_t* cur_match_len = address_match_len;
+          uint8_t** cur_addr_match = addresses;
+
+          while (*cur_match_len)
+          {
+              if (memcmp(address, *cur_addr_match, *cur_match_len) == 0)
+              {
+                  printf("Possible NRF packet with CRC error (given: %04X, calculated: %04X, length: %d, address: ",
+                        crc_given, crc, payload_length);
+                  for (int i = 0; i < address_length; i++) print("%02X",address[i]);
+                  printf(")\n");
+                  break;
+              }
+              cur_match_len++;
+              cur_addr_match++;
+          }
+      }
     delete[] address;
     return false;
   }

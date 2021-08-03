@@ -44,13 +44,15 @@ public:
 
   // Attempt to parse a packet from some incoming bytes
   static bool try_parse(const uint8_t * bytes,
-                        const uint8_t * bytes_shifted,
+                        const uint8_t ** addresses,
+                        const uint8_t * address_match_len,
                         uint8_t address_length,
                         uint8_t crc_length,
                         enhanced_shockburst_packet *& packet);
 
   static bool _try_parse(const uint8_t* bytes,
-                        const uint8_t* bytes_shifted,
+                        const uint8_t** addresses,
+                        const uint8_t* address_match_len,
                         uint8_t address_length,
                         uint8_t crc_length,
                         enhanced_shockburst_packet*& packet,

@@ -41,6 +41,8 @@ namespace gr {
       uint8_t m_crc_length;
       uint8_t m_channel; 
       uint8_t m_data_rate;
+      uint8_t** m_addresses;
+      uint8_t* m_address_match_len;
 
       // Incoming bit/byte vector
       bit_shifting_byte_vector m_decoded_bits_bytes;

@@ -35,10 +35,11 @@ namespace gr {
     nordic_rx::make(uint8_t channel,
                     uint8_t address_length,
                     uint8_t crc_length,
-                    uint8_t data_rate)
+                    uint8_t data_rate,
+                    const std::string &address_match)
     {
       return gnuradio::get_initial_sptr
-        (new nordic_rx_impl(channel, address_length, crc_length, data_rate));
+        (new nordic_rx_impl(channel, address_length, crc_length, data_rate, address_match));
     }
 
     /*
@@ -47,7 +48,8 @@ namespace gr {
     nordic_rx_impl::nordic_rx_impl(uint8_t channel,
                                    uint8_t address_length,
                                    uint8_t crc_length,
-                                   uint8_t data_rate)
+                                   uint8_t data_rate,
+                                   const std::string &address_match)
       : gr::sync_block("nordic_rx",
               gr::io_signature::make(1, 1, sizeof(uint8_t)),
               gr::io_signature::make(0, 0, 0)),
@@ -55,8 +57,41 @@ namespace gr {
               m_crc_length(crc_length),
               m_address_length(address_length),
               m_channel(channel),
-              m_data_rate(data_rate)
+              m_data_rate(data_rate),
+              m_addresses(NULL),
+              m_address_matches_len(NULL)
     {
+        // Parse list of addresses
+        if (!address_match.empty())
+        {
+            int n_addresses = std::count(address_match.begin(), address_match.end(), ',') + 1;
+
+            m_addresses = new uint8_t[n_addresses][address_length];
+            m_address_match_len = new uint8_t[n_addresses + 1];
+            m_address_match_len[n_addresses] = 0;
+
+            int cur_address = 0;
+            size_t e = 0;
+
+            string::iterator s = address_match.begin();
+            do 
+            {
+                e = address_match.find(',', s);
+                m_address_match_len[cur_address] = std::min(e / 2, address_length);
+
+                try {
+                    std::string hex_address = boost::algorithm::unhex(address_match.substr(s, m_address_match_len[cur_address] * 2));
+                    memcpy(m_addresses[cur_address], hex_address.c_str(), m_address_match_len[cur_address]));
+                    cur_address++;
+                }
+                catch (boost::algorithm::hex_decode_error hde) {
+                    printf("Warning, invalid hex data provided as address match list to nordic_rx\n");
+                }
+
+                s += e + 1;
+            } while ((e != std::string::npos) && (s < address_match.end()));
+        }
+
       message_port_register_out(pmt::mp("nordictap_out"));
     }
 
@@ -65,7 +100,10 @@ namespace gr {
      */
     nordic_rx_impl::~nordic_rx_impl()
     {
-
+        if (m_addresses)
+            delete[][] m_addresses;
+        if (m_address_match_len)
+            delete[] m_address_match_len;
     }
 
     int
@@ -90,7 +128,8 @@ namespace gr {
           {	      
             // Attempt to decode a payload
             if(enhanced_shockburst_packet::try_parse(bytes,
-                                                     m_decoded_bits_bytes.bytes(0),
+                                                     m_addresses,
+                                                     m_address_match_len,
                                                      m_address_length,
                                                      m_crc_length,
                                                      m_enhanced_shockburst))
