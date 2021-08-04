@@ -25,6 +25,7 @@
 #include <gnuradio/io_signature.h>
 #include <pmt/pmt.h>
 #include <boost/asio.hpp>
+#include <boost/algorithm/hex.hpp>
 #include "nordic_rx_impl.h"
 #include "nordictap.h"
 
@@ -32,10 +33,10 @@ namespace gr {
   namespace nordic {
 
     nordic_rx::sptr
-    nordic_rx::make(uint8_t channel,
-                    uint8_t address_length,
-                    uint8_t crc_length,
-                    uint8_t data_rate,
+    nordic_rx::make(const uint8_t channel,
+                    const uint8_t address_length,
+                    const uint8_t crc_length,
+                    const uint8_t data_rate,
                     const std::string &address_match)
     {
       return gnuradio::get_initial_sptr
@@ -45,10 +46,10 @@ namespace gr {
     /*
      * The private constructor
      */
-    nordic_rx_impl::nordic_rx_impl(uint8_t channel,
-                                   uint8_t address_length,
-                                   uint8_t crc_length,
-                                   uint8_t data_rate,
+    nordic_rx_impl::nordic_rx_impl(const uint8_t channel,
+                                   const uint8_t address_length,
+                                   const uint8_t crc_length,
+                                   const uint8_t data_rate,
                                    const std::string &address_match)
       : gr::sync_block("nordic_rx",
               gr::io_signature::make(1, 1, sizeof(uint8_t)),
@@ -59,29 +60,33 @@ namespace gr {
               m_channel(channel),
               m_data_rate(data_rate),
               m_addresses(NULL),
-              m_address_matches_len(NULL)
+              m_address_match_len(NULL)
     {
         // Parse list of addresses
         if (!address_match.empty())
         {
-            int n_addresses = std::count(address_match.begin(), address_match.end(), ',') + 1;
+ 	    std::string match_buffer = address_match;
+            int n_addresses = std::count(match_buffer.begin(), match_buffer.end(), ',') + 1;
 
-            m_addresses = new uint8_t[n_addresses][address_length];
+	    m_addresses = new uint8_t *[n_addresses];
+	    for (int i = 0; i < n_addresses; i++)
+	      m_addresses[i] = new uint8_t[address_length];
+	    
             m_address_match_len = new uint8_t[n_addresses + 1];
             m_address_match_len[n_addresses] = 0;
 
             int cur_address = 0;
             size_t e = 0;
 
-            string::iterator s = address_match.begin();
+	    std::string::iterator s = match_buffer.begin();
             do 
             {
-                e = address_match.find(',', s);
-                m_address_match_len[cur_address] = std::min(e / 2, address_length);
+  	        e = match_buffer.find(',', s - match_buffer.begin());
+                m_address_match_len[cur_address] = std::min(e / 2, (size_t) address_length);
 
                 try {
-                    std::string hex_address = boost::algorithm::unhex(address_match.substr(s, m_address_match_len[cur_address] * 2));
-                    memcpy(m_addresses[cur_address], hex_address.c_str(), m_address_match_len[cur_address]));
+		  std::string hex_address = boost::algorithm::unhex(match_buffer.substr(s - match_buffer.begin(), m_address_match_len[cur_address] * 2));
+                    memcpy(m_addresses[cur_address], hex_address.c_str(), m_address_match_len[cur_address]);
                     cur_address++;
                 }
                 catch (boost::algorithm::hex_decode_error hde) {
@@ -89,7 +94,7 @@ namespace gr {
                 }
 
                 s += e + 1;
-            } while ((e != std::string::npos) && (s < address_match.end()));
+	    } while ((e != std::string::npos) && (s < match_buffer.end()));
         }
 
       message_port_register_out(pmt::mp("nordictap_out"));
@@ -101,7 +106,12 @@ namespace gr {
     nordic_rx_impl::~nordic_rx_impl()
     {
         if (m_addresses)
-            delete[][] m_addresses;
+	  {
+	    for (int i = 0; i < 1; i++)
+	      delete[] m_addresses[i];
+	    delete[] m_addresses;
+	  }
+
         if (m_address_match_len)
             delete[] m_address_match_len;
     }
@@ -128,8 +138,8 @@ namespace gr {
           {	      
             // Attempt to decode a payload
             if(enhanced_shockburst_packet::try_parse(bytes,
-                                                     m_addresses,
-                                                     m_address_match_len,
+                                                     (const uint8_t **) m_addresses,
+                                                     (const uint8_t *) m_address_match_len,
                                                      m_address_length,
                                                      m_crc_length,
                                                      m_enhanced_shockburst))

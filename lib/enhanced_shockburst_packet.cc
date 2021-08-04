@@ -191,8 +191,8 @@ bool enhanced_shockburst_packet::_try_parse(const uint8_t * bytes,
       // If we've been provided a list of possible addresses, look for those so we can report CRC errors
       if (address_match_len)
       {
-          uint8_t* cur_match_len = address_match_len;
-          uint8_t** cur_addr_match = addresses;
+          const uint8_t* cur_match_len = address_match_len;
+          const uint8_t** cur_addr_match = addresses;
 
           while (*cur_match_len)
           {
@@ -200,7 +200,7 @@ bool enhanced_shockburst_packet::_try_parse(const uint8_t * bytes,
               {
                   printf("Possible NRF packet with CRC error (given: %04X, calculated: %04X, length: %d, address: ",
                         crc_given, crc, payload_length);
-                  for (int i = 0; i < address_length; i++) print("%02X",address[i]);
+                  for (int i = 0; i < address_length; i++) printf("%02X",address[i]);
                   printf(")\n");
                   break;
               }

@@ -53,10 +53,11 @@ namespace gr {
      public:
 
       // Constructor/destructor
-      nordic_rx_impl(uint8_t channel,
-                     uint8_t address_length,
-                     uint8_t crc_length,
-                     uint8_t data_rate);
+      nordic_rx_impl(const uint8_t channel,
+                     const uint8_t address_length,
+                     const uint8_t crc_length,
+                     const uint8_t data_rate,
+		     const std::string &address_match);
       ~nordic_rx_impl();
 
       // Main work method
