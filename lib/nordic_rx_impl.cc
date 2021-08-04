@@ -82,7 +82,11 @@ namespace gr {
             do 
             {
   	        e = match_buffer.find(',', s - match_buffer.begin());
-                m_address_match_len[cur_address] = std::min(e / 2, (size_t) address_length);
+
+		if (e == std::string::npos)
+		  e = match_buffer.end() - match_buffer.begin();
+		
+                m_address_match_len[cur_address] = std::min((e - (s - match_buffer.begin())) / 2, (size_t) address_length);
 
                 try {
 		  std::string hex_address = boost::algorithm::unhex(match_buffer.substr(s - match_buffer.begin(), m_address_match_len[cur_address] * 2));
@@ -93,8 +97,8 @@ namespace gr {
                     printf("Warning, invalid hex data provided as address match list to nordic_rx\n");
                 }
 
-                s += e + 1;
-	    } while ((e != std::string::npos) && (s < match_buffer.end()));
+                s += (e - (s - match_buffer.begin())) + 1;
+	    } while (s < match_buffer.end());
         }
 
       message_port_register_out(pmt::mp("nordictap_out"));

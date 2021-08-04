@@ -59,6 +59,8 @@ enhanced_shockburst_packet::enhanced_shockburst_packet(uint8_t address_length,
   m_packet_length_bits = blen*8;
   m_packet_bytes = new uint8_t[blen];
 
+  memset(m_packet_bytes, 0, blen);
+
   // Preamble
   if((address[0] & 0x80) == 0x80) m_packet_bytes[0] = 0xAA;
   else m_packet_bytes[0] = 0x55;
@@ -189,11 +191,13 @@ bool enhanced_shockburst_packet::_try_parse(const uint8_t * bytes,
   if(memcmp(&crc, &crc_given, 2) != 0)
   {
       // If we've been provided a list of possible addresses, look for those so we can report CRC errors
-      if (address_match_len)
+      // Only check this if we're in the big_packet round of parsing, otherwise will report valid BP
+      // packets during the non-BP parsing round.
+      if (address_match_len && big_packet)
       {
           const uint8_t* cur_match_len = address_match_len;
           const uint8_t** cur_addr_match = addresses;
-
+	  
           while (*cur_match_len)
           {
               if (memcmp(address, *cur_addr_match, *cur_match_len) == 0)
@@ -208,8 +212,9 @@ bool enhanced_shockburst_packet::_try_parse(const uint8_t * bytes,
               cur_addr_match++;
           }
       }
-    delete[] address;
-    return false;
+      
+      delete[] address;
+      return false;
   }
 
   // Read the sequence number and no-ACK bit
@@ -245,7 +250,7 @@ bool enhanced_shockburst_packet::_try_parse(const uint8_t * bytes,
                                           crc_length,
                                           address,
                                           payload);
-
+  
   // Cleanup
   delete[] address;
 
@@ -269,6 +274,9 @@ void enhanced_shockburst_packet::print()
 
   printf("Bytes:   ");
   for(int x = 0; x < m_packet_length_bytes; x++) printf("%02X ", m_packet_bytes[x]);
+  printf("BP:      %d\n", m_big_packet);
+  printf("ACK:     %d\n", m_no_ack);
+  
   printf("\n"); 
 
   printf("\n");
