@@ -1,10 +1,26 @@
 -- trivial protocol example
 -- declare our protocol
 nordic_proto = Proto("nordic","Nordic Semiconductor nRF24L")
+
+nordic_proto.fields.address = ProtoField.bytes("nordic.address", "Address", base.SPACE)
+nordic_proto.fields.address_length = ProtoField.uint8("nordic.address_length", "Address length", base.DEC)
+nordic_proto.fields.channel = ProtoField.uint8("nordic.channel", "Channel", base.DEC)
+nordic_proto.fields.data_rate = ProtoField.string("nordic.data_rate", "Data rate")
+nordic_proto.fields.payload = ProtoField.bytes("nordic.payload", "Payload", base.SPACE)
+nordic_proto.fields.payload_length = ProtoField.uint8("nordic.payload_length", "Payload length", base.DEC)
+nordic_proto.fields.crc = ProtoField.uint16("nordic.crc", "CRC", base.HEX)
+nordic_proto.fields.crc_length = ProtoField.uint8("nordic.crc_length", "CRC length", base.DEC)
+nordic_proto.fields.no_ack = ProtoField.bool("nordic.no_ack", "No ACK")
+nordic_proto.fields.ack = ProtoField.bool("nordic.ack", "ACK")
+nordic_proto.fields.ack_retransmits = ProtoField.uint8("nordic.ack_retransmits", "ACK retransmits")
+nordic_proto.fields.sequence_number = ProtoField.uint8("nordic.sequence_number","Sequence number", base.DEC)
+nordic_proto.fields.big_packet = ProtoField.bool("nordic.big_packet","Big packet (DPL)")
+
 -- create a function to dissect it
 function nordic_proto.dissector(buffer,pinfo,tree)
-    pinfo.cols.protocol = "NORDIC"
-    local subtree = tree:add(nordic_proto,buffer(),"nRF24L Packet")
+    pinfo.cols.protocol = nordic_proto.name
+    local subtree = tree:add(nordic_proto,buffer(),"Nordic Enhanced ShockBurst (ESB)")
+	local hd_subtree = subtree:add("GNU Radio Tags")
     pinfo.cols.info = ""
 
     -- channel
@@ -13,9 +29,9 @@ function nordic_proto.dissector(buffer,pinfo,tree)
     -- data rate
     local data_rate = buffer(1,1):uint()
     local data_rate_string = ""
-    if data_rate == 0 then data_rate_string = "250K" end
-    if data_rate == 1 then data_rate_string = "1M" end
-    if data_rate == 2 then data_rate_string = "2M" end
+    if data_rate == 0 then data_rate_string = "250 kbps" end
+    if data_rate == 1 then data_rate_string = "1 mbps" end
+    if data_rate == 2 then data_rate_string = "2 mbps" end
 
     -- address length
     local address_length = buffer(2,1):uint()
@@ -33,7 +49,7 @@ function nordic_proto.dissector(buffer,pinfo,tree)
     local crc_length = buffer(6,1):uint()
 
     -- dynamic payloads bit
-    local dynamic_payload = buffer(7,1):uint()
+    local big_packet = buffer(7,1):uint()
 
     -- address
     local address = buffer(8,address_length)
@@ -42,26 +58,43 @@ function nordic_proto.dissector(buffer,pinfo,tree)
     -- payload
     local payload = buffer(8+address_length,payload_length)
     local payload_bytes = payload:bytes()
+	local ack = False
+	
+	-- TODO - ack packet is not well understood or documented. Length 0 is one type of ack packet, but some can have payloads as well
+	-- ack_retransmits - not yet implemented
+	local ack_retransmits = 0
+	
+    -- TODO 
+    if payload_bytes:len() == 0 then
+      pinfo.cols.info = "ACK"
+	  ack = True
+    end
+	
+	-- TODO
+	-- bad_crc = buffer(8,1):uint()
+	bad_crc = 0
+	
 
     -- crc
     local crc = buffer(8+address_length+payload_length, crc_length)
+	hd_subtree:add(nordic_proto.fields.channel, buffer(0,1), channel)
+	hd_subtree:add(nordic_proto.fields.data_rate, buffer(1,1), data_rate_string)
+	hd_subtree:add(nordic_proto.fields.address_length, buffer(2,1), address_length)
+	hd_subtree:add(nordic_proto.fields.crc_length, buffer(6,1), crc_length)
 
-    subtree:add(buffer(0,1), "Channel:         " .. (2400+channel) .. "MHz")
-    subtree:add(buffer(1,1), "Data Rate:       " .. data_rate_string)
-    subtree:add(buffer(2,1), "Address Length:  " .. address_length)
-    subtree:add(buffer(3,1), "Payload Length:  " .. payload_length)
-    subtree:add(buffer(4,1), "Sequence Number: " .. sequence_number)
-    subtree:add(buffer(5,1), "No ACK:          " .. no_ack)
-    subtree:add(buffer(6,1), "Dynamic Payload: " .. dynamic_payload)
-    subtree:add(buffer(7,1), "CRC Length:      " .. crc_length)
-    subtree:add(buffer(8,address_length), "Address:         " .. address)
-    subtree:add(buffer(8+address_length,payload_length), "Payload:         " .. payload)
-    subtree:add(buffer(8+address_length+payload_length, crc_length), "CRC:             " .. crc)
-
-    -- Keepalive (vendor agnostic)
-    if payload_bytes:len() == 0 then
-      pinfo.cols.info = "ACK"
-    end
+	subtree:add(nordic_proto.fields.address, address)
+	subtree:add(nordic_proto.fields.sequence_number, buffer(4,1), sequence_number)
+	subtree:add(nordic_proto.fields.no_ack, buffer(5,1), no_ack)
+	subtree:add(nordic_proto.fields.big_packet, buffer(7,1), big_packet)
+	subtree:add(nordic_proto.fields.ack, ack)
+	subtree:add(nordic_proto.fields.ack_retransmits, ack_retransmits)
+	subtree:add(nordic_proto.fields.payload_length, buffer(3,1), payload_length)
+	subtree:add(nordic_proto.fields.payload, payload)
+	crcNode = subtree:add(nordic_proto.fields.crc, crc)
+	
+	if (bad_crd == 1) then
+		crcNode:add_expert_info(PI_CHECKSUM, PI_ERROR, "CRC incorrect")
+	end
 
     -- Microsoft
     if bit.band(buffer(7,1):uint(), 0xF0) == 0xA0 and payload_length > 0 then 
